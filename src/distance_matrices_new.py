@@ -38,6 +38,20 @@ class DistanceMatricesNew:
         dist = dist.loc[np.invert(dist.id_col.isin(all_clusterized_pairs))]
         return dist
 
+    def bin_distances(self, dist):
+        dist = dist.sort_values(by='distance')
+        var_bins = np.histogram_bin_edges(dist['distance'].values, bins='auto')
+        #Interpolate between bins (resampling)
+        for step in range(1):
+            n = len(var_bins)
+            var_bin_range = np.arange(0, 2*n, 2)
+            var_bin_range_new = np.arange(2*n-1)
+            var_bins = np.interp(var_bin_range_new, var_bin_range, var_bins)
+        print(len(var_bins))
+        dist['distance'] = list(np.digitize(dist['distance'].values, var_bins))
+        dist = dist.sort_values(by='id_0')
+        return dist
+
     def find_nearest_dists(self, dist):
         """Finds nearest distances for in the distance matrix to determine outlier ranges."""
         nearest_dists = []
