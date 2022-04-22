@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import make_blobs
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import silhouette_samples
-from codes.distance_matrices_new import DistanceMatricesNew
+from clustress.distance_matrices_new import DistanceMatricesNew
 import itertools
 from itertools import compress
 import matplotlib.pyplot as plt
