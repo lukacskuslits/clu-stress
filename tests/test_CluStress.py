@@ -5,43 +5,30 @@ from src.clustress.clu_stress import CluStress
 
 
 class TestCluStress(TestCase):
-
-    mock_points = pd.DataFrame({'x': [1,2], 'y': [3,4]})
+    mock_mindices0 = [0, 0, 0, 1, 1, 7, 7, 7, 5, 5, 5, 20]
+    mock_mindices1 = [2, 5, 1, 4, 3, 9, 8, 7, 6, 5, 4, 13]
+    mock_points = pd.DataFrame({'x': mock_mindices0, 'y': mock_mindices1})
     mock_points['PID'] = list(mock_points.index)
-    mock_cluster_fl = [0,0]
-    mock_points['cluster_fl'] = mock_cluster_fl
+    mock_cluster_fl = 0
+    mock_points['cluster_fl'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     clu_stress = CluStress(mock_points)
 
-    mock_mindices0 = [0, 0, 0, 1, 1, 7, 7, 7, 5, 5, 5]
-    mock_mindices1 = [2, 5, 1, 4, 3, 9, 8, 7, 6, 5, 4]
+
+
 
     def test_group_connected_pairs_of_min_dist(self):
+        check_cluster_fl = [1, 0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 0]
         pontok, cluster_fl = self.clu_stress.clusterize_nearest(self.mock_points, self.mock_cluster_fl)
-        print(pontok), print(cluster_fl)
+        self.assertListEqual(check_cluster_fl, list(pontok.cluster_fl))
 
     def test_group_all_connected_pairs_of_min_dist(self):
-        check_dict = {0: [np.array([[0, 2],\
-                     [0, 5],\
-                     [0, 1],\
-                     [5, 6],\
-                     [5, 5],\
-                     [5, 4],\
-                     [1, 4],\
-                     [1, 3]])], 1: [np.array([[0, 2],\
-                     [0, 5],\
-                     [0, 1],\
-                     [5, 6],\
-                     [5, 5],\
-                     [5, 4],\
-                     [1, 4],\
-                     [1, 3]])], 2: [np.array([[7, 9],\
-                     [7, 9],\
-                     [7, 8],\
-                     [7, 7]])]}
-        returned_dict = self.clu_stress.group_all_connected_pairs_of_min_dist(
-                        self.mock_mindices0, self.mock_mindices1)
-        print(returned_dict)
-        self.assertListEqual(list(returned_dict), list(check_dict))
+        check_cluster_fl = dict({0: {'cluster_fl': 1}, 1: {'cluster_fl': 0}, 2: {'cluster_fl': 1}, 3: {'cluster_fl': 2},
+                                 4: {'cluster_fl': 2}, 5: {'cluster_fl': 3}, 6: {'cluster_fl': 3}, 7: {'cluster_fl': 3},
+                                 8: {'cluster_fl': 4}, 9: {'cluster_fl': 4}, 10: {'cluster_fl': 4}, 11: {'cluster_fl': 0}})
+        pontok, cluster_fl = self.clu_stress.clusterize_nearest(self.mock_points.sample(frac=1), self.mock_cluster_fl)
+        pontok.index = pontok.PID
+        pontok = pontok.sort_index()
+        self.assertEqual(check_cluster_fl, pontok[['cluster_fl']].to_dict(orient='index'))
 
     def test_clusterize_closest(self):
         self.clu_stress.ClusterizeClosest()

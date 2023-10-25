@@ -129,7 +129,8 @@ class CluStress:
 			increment = increment+1
 			if increment >= L:
 				if len(remaining_point_pairs)!=0:
-					connected_point_pairs.append(remaining_point_pairs[0])
+					[connected_point_set, _] = self.connect_nearest_points_to_pair(remaining_point_pairs[0], remaining_point_pairs)
+					connected_point_pairs.append(connected_point_set)
 				break
 		return connected_point_pairs
 
@@ -141,7 +142,7 @@ class CluStress:
 			self.set_distance_matrix(list(clusterized.PID))
 			indexes_of_nearest_points = list(self.dist[self.dist.distance == self.dist.distance.min()].id_col)
 			connected_nearest_points = self.get_connected_points(indexes_of_nearest_points)
-			for  connected_point_set in connected_nearest_points:
+			for connected_point_set in connected_nearest_points:
 				cluster_fl = cluster_fl + 1
 				points['cluster_fl'][points.PID.isin(list(connected_point_set))] = cluster_fl
 				clusterized = points.loc[points['cluster_fl'] == cluster_fl].reset_index(drop=True)
