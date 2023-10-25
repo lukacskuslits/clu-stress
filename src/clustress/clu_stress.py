@@ -18,8 +18,8 @@ import matplotlib.pyplot as plt
 
 class CluStress:
 
-	def __init__(self, pontok):
-		col_list = list(pontok.columns)
+	def __init__(self, points):
+		col_list = list(points.columns)
 		print(col_list)
 		if 'PID' not in col_list:
 			print('Column PID missing from input data!')
@@ -27,7 +27,7 @@ class CluStress:
 		if 'cluster_fl' not in col_list:
 			print('Column cluster_fl missing from input data!')
 			sys.exit(-1)
-		dist_array = DistanceMatricesNew().compute_distance_matrix(pontok, col_list[:-2])
+		dist_array = DistanceMatricesNew().compute_distance_matrix(points, col_list[:-2])
 		self.dist_array = dist_array
 		dist = DistanceMatricesNew().transform_distance_matrix(dist_array)
 		dist['rev_id_col'] = dist['id_col'].apply(DistanceMatricesNew().flip_values)
@@ -55,25 +55,25 @@ class CluStress:
 		outlier_range = q_3 + k*(q_3 - q_1)
 		return outlier_range
 
-	def select_outliers(self, pontok, k=1.5):
+	def select_outliers(self, points, k=1.5):
 		outlier_range = self.get_outlier_distances(k)
 		dist_sorted = self.dist.sort_values(by=['id_0','distance']).copy()
-		for _id in list(pontok['PID']):
-			if _id == len(list(pontok['PID']))-1:
+		for _id in list(points['PID']):
+			if _id == len(list(points['PID']))-1:
 				nearest_dist_of_point = dist_sorted.loc[dist_sorted['id_1']==_id]['distance'].iloc[0]
 			else:
 				nearest_dist_of_point = dist_sorted.loc[dist_sorted['id_0']==_id]['distance'].iloc[0]
 			if nearest_dist_of_point>outlier_range:
-				pontok.cluster_fl.loc[pontok.PID==_id] = -1
-		self.dist['cluster_fl'] = self.dist.id_0.map(pontok.set_index('PID')['cluster_fl'])
-		self.dist['cluster_fl_1'] = self.dist.id_1.map(pontok.set_index('PID')['cluster_fl'])
-		self.dist.cluster_fl.loc[self.dist.id_1 == pontok.PID.max()] = list(self.dist.cluster_fl_1.loc[self.dist.id_1 == pontok.PID.max()])
+				points.cluster_fl.loc[points.PID==_id] = -1
+		self.dist['cluster_fl'] = self.dist.id_0.map(points.set_index('PID')['cluster_fl'])
+		self.dist['cluster_fl_1'] = self.dist.id_1.map(points.set_index('PID')['cluster_fl'])
+		self.dist.cluster_fl.loc[self.dist.id_1 == points.PID.max()] = list(self.dist.cluster_fl_1.loc[self.dist.id_1 == points.PID.max()])
 		self.dist.drop(columns=['cluster_fl_1'])
 		dist_filtered = self.dist.loc[self.dist['cluster_fl']!=-1].copy()
 		dist_filtered = dist_filtered.drop(columns=['cluster_fl', 'cluster_fl_1'])
-		pontok_filtered = pontok.loc[pontok['cluster_fl'] != -1].copy()
-		pontok_outlier = pontok.loc[pontok['cluster_fl'] == -1].copy()
-		return pontok_filtered, pontok_outlier, dist_filtered
+		points_filtered = points.loc[points['cluster_fl'] != -1].copy()
+		points_outlier = points.loc[points['cluster_fl'] == -1].copy()
+		return points_filtered, points_outlier, dist_filtered
 
 	def transform_distance_matrix(self, distance_matrix):
 		"""Converts distance_matrix to a sparse array dictionary of keys format."""
@@ -133,21 +133,21 @@ class CluStress:
 				break
 		return connected_point_pairs
 
-	def clusterize_closest(self, pontok, cluster_fl):
+	def clusterize_nearest(self, points, cluster_fl):
 		if cluster_fl != 0:
-			clusterized = pontok.loc[(pontok['cluster_fl'] <= cluster_fl) & (pontok['cluster_fl'] != 0)].reset_index(drop=True)
+			clusterized = points.loc[(points['cluster_fl'] <= cluster_fl) & (points['cluster_fl'] != 0)].reset_index(drop=True)
 		else:
-			clusterized = pontok.loc[pontok['cluster_fl'] != cluster_fl].reset_index(drop=True)
+			clusterized = points.loc[points['cluster_fl'] != cluster_fl].reset_index(drop=True)
 			self.set_distance_matrix(list(clusterized.PID))
 			indexes_of_nearest_points = list(self.dist[self.dist.distance == self.dist.distance.min()].id_col)
 			connected_nearest_points = self.get_connected_points(indexes_of_nearest_points)
 			for  connected_point_set in connected_nearest_points:
 				cluster_fl = cluster_fl + 1
-				pontok['cluster_fl'][pontok.PID.isin(list(connected_point_set))] = cluster_fl
-				clusterized = pontok.loc[pontok['cluster_fl'] == cluster_fl].reset_index(drop=True)
+				points['cluster_fl'][points.PID.isin(list(connected_point_set))] = cluster_fl
+				clusterized = points.loc[points['cluster_fl'] == cluster_fl].reset_index(drop=True)
 				self.dist = DistanceMatricesNew().set_distance_matrix(self.dist, list(clusterized.PID))
-			pontok = pontok.reset_index(drop=True)
-		return pontok, cluster_fl
+			points = points.reset_index(drop=True)
+		return points, cluster_fl
 
 	def check_if_nearest_point_is_part_of_a_cluster(self, clusterized, to_merge, variables):
 		to_merge = self.join_with_clusterized(clusterized, to_merge, 'id_1', variables)
@@ -162,19 +162,19 @@ class CluStress:
 		to_merge = to_merge.fillna(0)
 		return to_merge
 
-	def merge_points(self, pontok, to_merge):
-		pontok['point_id'] = pontok['PID']
-		pontok = pontok.set_index('point_id').join(to_merge.set_index('id_0'), how='left')
-		pontok = pontok.fillna(0)
-		pontok['cluster_fl'] = pontok['cluster_fl'] + pontok['cluster_fl_1']
-		pontok = pontok.drop(columns=['cluster_fl_1'], axis=1)
-		return pontok
+	def merge_points(self, points, to_merge):
+		points['point_id'] = points['PID']
+		points = points.set_index('point_id').join(to_merge.set_index('id_0'), how='left')
+		points = points.fillna(0)
+		points['cluster_fl'] = points['cluster_fl'] + points['cluster_fl_1']
+		points = points.drop(columns=['cluster_fl_1'], axis=1)
+		return points
 
-	def link_points_which_have_their_nearest_neighbours_in_a_cluster(self, pontok, variables):
-		not_clusterized = pontok.loc[pontok['cluster_fl'] == 0]
+	def link_points_which_have_their_nearest_neighbours_in_a_cluster(self, points, variables):
+		not_clusterized = points.loc[points['cluster_fl'] == 0]
 		not_clusterized_id = list(not_clusterized.PID)
-		point_id = list(pontok.PID)
-		clusterized = pontok.loc[pontok['cluster_fl'] != 0]
+		point_id = list(points.PID)
+		clusterized = points.loc[points['cluster_fl'] != 0]
 		not_clust_pairs = [(nc, p) for nc, p in itertools.product(not_clusterized_id, point_id)]
 		id_0 = list(itertools.chain.from_iterable(itertools.repeat(x, len(point_id)) for x in not_clusterized_id))
 		id_1 = point_id * len(not_clusterized_id)
@@ -193,11 +193,11 @@ class CluStress:
 		to_merge = self.check_if_nearest_point_is_part_of_a_cluster(clusterized, to_merge, variables)
 		to_merge['cluster_fl_1'] = to_merge['cluster_fl']
 		to_merge = to_merge.drop(columns=['cluster_fl', 'point_id', 'id_col', 'distance_0', 'distance', 'distance_1'], axis=1)
-		to_merge = self.select_largest_nearest_cluster(to_merge, pontok)
-		pontok = self.merge_points(pontok, to_merge)
-		return pontok
+		to_merge = self.select_largest_nearest_cluster(to_merge, points)
+		points = self.merge_points(points, to_merge)
+		return points
 
-	def select_largest_nearest_cluster(self, to_merge, pontok):
+	def select_largest_nearest_cluster(self, to_merge, points):
 		points_with_more_than_one_nearest_neighbour = list(to_merge['id_0'].loc[to_merge['id_0'].duplicated()==True])
 		if len(points_with_more_than_one_nearest_neighbour) > 0:
 			for point_w_more_neighbours in points_with_more_than_one_nearest_neighbour:
@@ -205,7 +205,7 @@ class CluStress:
 				to_merge_tmp['halmaz_meret'] = 0
 				to_merge_tmp = to_merge_tmp.reset_index(drop=True)
 				for point_to_merge_more_neigh in range(len(to_merge_tmp)):
-					to_merge_tmp.iloc[point_to_merge_more_neigh].halmaz_meret = len(pontok.loc[pontok.cluster_fl==to_merge_tmp.iloc[point_to_merge_more_neigh].cluster_fl_1])
+					to_merge_tmp.iloc[point_to_merge_more_neigh].halmaz_meret = len(points.loc[points.cluster_fl==to_merge_tmp.iloc[point_to_merge_more_neigh].cluster_fl_1])
 				to_merge_tmp = to_merge_tmp.sort_values(by=['halmaz_meret'], ascending=False).iloc[0]
 				to_merge = to_merge.loc[to_merge.id_0 != point_w_more_neighbours]
 				to_merge = to_merge.append(to_merge_tmp)
@@ -222,7 +222,7 @@ class CluStress:
 		while (len(zeros_now) < len(zeros_before)) and (0 in set_of_flags):
 			self.dist.to_csv('dist_py_1.csv')
 			zeros_before = list(data.loc[data.cluster_fl==0].cluster_fl)
-			[data, cluster_fl] = self.clusterize_closest(data, cluster_fl)
+			[data, cluster_fl] = self.clusterize_nearest(data, cluster_fl)
 			self.dist.to_csv('dist_py_2.csv')
 			data = self.link_points_which_have_their_nearest_neighbours_in_a_cluster(data, variables)
 			self.dist.to_csv('dist_py_3.csv')
