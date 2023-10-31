@@ -209,24 +209,24 @@ class CluStress:
 					to_merge_tmp.iloc[point_to_merge_more_neigh].halmaz_meret = len(points.loc[points.cluster_fl==to_merge_tmp.iloc[point_to_merge_more_neigh].cluster_fl_1])
 				to_merge_tmp = to_merge_tmp.sort_values(by=['halmaz_meret'], ascending=False).iloc[0]
 				to_merge = to_merge.loc[to_merge.id_0 != point_w_more_neighbours]
-				to_merge = to_merge.append(to_merge_tmp)
+				to_merge = pd.concat([to_merge, to_merge_tmp])
 				to_merge = to_merge.drop(columns=['halmaz_meret'], axis=1)
 		return to_merge
 
-	def commence_clustering(self, data, variables):
+	def commence_clustering(self, points, variables):
 		cluster_fl = 0
 		set_of_flags = {0}
 		zeros_now = [0]
 		zeros_before = [0,0]
-		data = data.reset_index(drop=True)
+		points = points.reset_index(drop=True)
 		self.dist = DistanceMatricesNew().bin_distances(self.dist)
 		while (len(zeros_now) < len(zeros_before)) and (0 in set_of_flags):
 			self.dist.to_csv('dist_py_1.csv')
-			zeros_before = list(data.loc[data.cluster_fl==0].cluster_fl)
-			[data, cluster_fl] = self.clusterize_nearest(data, cluster_fl)
+			zeros_before = list(points.loc[points.cluster_fl==0].cluster_fl)
+			[points, cluster_fl] = self.clusterize_nearest(points, cluster_fl)
 			self.dist.to_csv('dist_py_2.csv')
-			data = self.link_points_which_have_their_nearest_neighbours_in_a_cluster(data, variables)
+			points = self.link_points_which_have_their_nearest_neighbours_in_a_cluster(points, variables)
 			self.dist.to_csv('dist_py_3.csv')
-			zeros_now = list(data.loc[data.cluster_fl==0].cluster_fl)
-			set_of_flags = set(data.cluster_fl)
-		return data
+			zeros_now = list(points.loc[points.cluster_fl==0].cluster_fl)
+			set_of_flags = set(points.cluster_fl)
+		return points
