@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from codes.clu_stress import CluStress
+from src.clustress.clu_stress import CluStress
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import make_blobs
 
