@@ -165,6 +165,10 @@ class CluStress:
 
 	def merge_points(self, points, to_merge):
 		points['point_id'] = points['PID']
+		if 0 in list(points.columns):
+			points = points.drop(columns=[0], axis=1)
+		if 0 in list(to_merge.columns):
+			to_merge = to_merge.drop(columns=[0], axis=1)
 		points = points.set_index('point_id').join(to_merge.set_index('id_0'), how='left')
 		points = points.fillna(0)
 		points['cluster_fl'] = points['cluster_fl'] + points['cluster_fl_1']
@@ -199,7 +203,7 @@ class CluStress:
 		return points
 
 	def select_largest_nearest_cluster(self, to_merge, points):
-		points_with_more_than_one_nearest_neighbour = list(to_merge['id_0'].loc[to_merge['id_0'].duplicated()==True])
+		points_with_more_than_one_nearest_neighbour = set(to_merge['id_0'].loc[to_merge['id_0'].duplicated()==True])
 		if len(points_with_more_than_one_nearest_neighbour) > 0:
 			for point_w_more_neighbours in points_with_more_than_one_nearest_neighbour:
 				to_merge_tmp = to_merge.loc[to_merge.id_0 == point_w_more_neighbours]
@@ -210,7 +214,8 @@ class CluStress:
 				to_merge_tmp = to_merge_tmp.sort_values(by=['halmaz_meret'], ascending=False).iloc[0]
 				to_merge = to_merge.loc[to_merge.id_0 != point_w_more_neighbours]
 				to_merge = pd.concat([to_merge, to_merge_tmp])
-				to_merge = to_merge.drop(columns=['halmaz_meret'], axis=1)
+				if 'halmaz_meret' in list(to_merge.columns):
+					to_merge = to_merge.drop(columns=['halmaz_meret'], axis=1)
 		return to_merge
 
 	def commence_clustering(self, points, variables):
