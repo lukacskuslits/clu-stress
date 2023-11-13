@@ -11,7 +11,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="clu-stress",
-    version="1.0.0",
+    version="1.0.1",
     author="Lukacs Kuslits",
     author_email="kuslits.lukacs@epss.hun-ren.hu",
     description="A non-parametric clustering algorithm.",
