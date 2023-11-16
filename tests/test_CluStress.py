@@ -123,5 +123,8 @@ class TestCluStressFullClustering(TestCase):
     def test_commence_clustering(self):
         points = self.clu_stress.commence_clustering(self.mock_points, self.mock_variables)
         print(points)
+        # import matplotlib.pyplot as plt
+        # plt.scatter(points['x'], points['y'], c=points.cluster_fl)
+        # plt.show()
 
 
