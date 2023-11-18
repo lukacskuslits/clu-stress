@@ -55,16 +55,18 @@ class CluStress:
 		outlier_range = q_3 + k*(q_3 - q_1)
 		return outlier_range
 
-	def select_outliers(self, points, k=1.5):
+	def select_outliers(self, points, k=2):
 		outlier_range = self.get_outlier_distances(k)
-		dist_sorted = self.dist.sort_values(by=['id_0','distance']).copy()
+		print('Outlier distance:')
+		print(outlier_range)
+		dist_sorted = self.dist.sort_values(by=['id_0', 'distance']).copy()
 		for _id in list(points['PID']):
 			if _id == len(list(points['PID']))-1:
-				nearest_dist_of_point = dist_sorted.loc[dist_sorted['id_1']==_id]['distance'].iloc[0]
+				nearest_dist_of_point = dist_sorted.loc[dist_sorted['id_1'] == _id]['distance'].iloc[0]
 			else:
-				nearest_dist_of_point = dist_sorted.loc[dist_sorted['id_0']==_id]['distance'].iloc[0]
+				nearest_dist_of_point = dist_sorted.loc[dist_sorted['id_0'] == _id]['distance'].iloc[0]
 			if nearest_dist_of_point>outlier_range:
-				points.cluster_fl.loc[points.PID==_id] = -1
+				points.cluster_fl.loc[points.PID == _id] = -1
 		self.dist['cluster_fl'] = self.dist.id_0.map(points.set_index('PID')['cluster_fl'])
 		self.dist['cluster_fl_1'] = self.dist.id_1.map(points.set_index('PID')['cluster_fl'])
 		self.dist.cluster_fl.loc[self.dist.id_1 == points.PID.max()] = list(self.dist.cluster_fl_1.loc[self.dist.id_1 == points.PID.max()].astype(int))
