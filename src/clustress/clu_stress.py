@@ -55,17 +55,15 @@ class CluStress:
 		outlier_range = q_3 + k*(q_3 - q_1)
 		return outlier_range
 
-	def select_outliers(self, points, k=2):
+	def select_outliers(self, points, k=1.5):
 		outlier_range = self.get_outlier_distances(k)
 		print('Outlier distance:')
 		print(outlier_range)
-		dist_sorted = self.dist.sort_values(by=['id_0', 'distance']).copy()
+		dist_to_sort = self.dist.copy()
 		for _id in list(points['PID']):
-			if _id == len(list(points['PID']))-1:
-				nearest_dist_of_point = dist_sorted.loc[dist_sorted['id_1'] == _id]['distance'].iloc[0]
-			else:
-				nearest_dist_of_point = dist_sorted.loc[dist_sorted['id_0'] == _id]['distance'].iloc[0]
-			if nearest_dist_of_point>outlier_range:
+			dist_temp = dist_to_sort.loc[(dist_to_sort['id_0'] == _id) | (dist_to_sort['id_1'] == _id)].sort_values(by=['distance'])
+			nearest_dist_of_point = dist_temp['distance'].iloc[0]
+			if nearest_dist_of_point > outlier_range:
 				points.cluster_fl.loc[points.PID == _id] = -1
 		self.dist['cluster_fl'] = self.dist.id_0.map(points.set_index('PID')['cluster_fl'])
 		self.dist['cluster_fl_1'] = self.dist.id_1.map(points.set_index('PID')['cluster_fl'])
@@ -73,6 +71,7 @@ class CluStress:
 		self.dist.drop(columns=['cluster_fl_1'])
 		dist_filtered = self.dist.loc[self.dist['cluster_fl']!=-1].copy()
 		dist_filtered = dist_filtered.drop(columns=['cluster_fl', 'cluster_fl_1'])
+		#self.dist = dist_filtered
 		points_filtered = points.loc[points['cluster_fl'] != -1].copy()
 		points_outlier = points.loc[points['cluster_fl'] == -1].copy()
 		return points_filtered, points_outlier, dist_filtered
@@ -139,7 +138,7 @@ class CluStress:
 
 	def clusterize_nearest(self, points, cluster_fl):
 		if cluster_fl != 0:
-			clusterized = points.loc[(points['cluster_fl'] != 0)].reset_index(drop=True) #(points['cluster_fl'] <= cluster_fl) &
+			clusterized = points.loc[(points['cluster_fl'] != 0)].reset_index(drop=True)
 		else:
 			clusterized = points.loc[points['cluster_fl'] != cluster_fl].reset_index(drop=True)
 		self.set_distance_matrix(list(clusterized.PID))

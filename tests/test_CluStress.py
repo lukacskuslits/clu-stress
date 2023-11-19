@@ -130,8 +130,8 @@ class TestCluStressFullClustering(TestCase):
 
 class TestBlobs(TestCase):
     from sklearn.datasets import make_blobs, make_moons
-    #var, clust = make_blobs(n_samples=100, centers=3, n_features=2)
-    var, clust = make_moons(n_samples=100, noise=0.1)
+    var, clust = make_blobs(n_samples=100, centers=3, n_features=2)
+    #var, clust = make_moons(n_samples=100, noise=0.1)
     mock_variables = ['x', 'y']
 
     def test_blobs(self):
@@ -161,6 +161,7 @@ class TestBlobs(TestCase):
 class TestOutliers(TestCase):
     mock_mindices0 = [0, 0, 0, 1, 1, 7, 7, 7, 5, 5, 5, 9, 30, 15]
     mock_mindices1 = [2, 5, 1, 4, 3, 9, 8, 7, 6, 5, 4, 10, 50, 25]
+    ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11, 12, 13]
     mock_points = pd.DataFrame({'x': mock_mindices0, 'y': mock_mindices1})
     from sklearn.preprocessing import MinMaxScaler
     scaler = MinMaxScaler()
