@@ -71,7 +71,7 @@ class CluStress:
 		self.dist.drop(columns=['cluster_fl_1'])
 		dist_filtered = self.dist.loc[self.dist['cluster_fl']!=-1].copy()
 		dist_filtered = dist_filtered.drop(columns=['cluster_fl', 'cluster_fl_1'])
-		#self.dist = dist_filtered
+		self.dist = dist_filtered
 		points_filtered = points.loc[points['cluster_fl'] != -1].copy()
 		points_outlier = points.loc[points['cluster_fl'] == -1].copy()
 		return points_filtered, points_outlier, dist_filtered
