@@ -128,6 +128,24 @@ class TestCluStressFullClustering(TestCase):
         # plt.show()
 
 
+class TestCluStressFullClustering_b(TestCase):
+    mock_mindices0 = [0, 1, 2, 3, 5, 8, 8, 8, 8, 14]
+    mock_mindices1 = [3, 1, 3, 0, 3, 3, 2, 4, 6, 8]
+    mock_points = pd.DataFrame({'x': mock_mindices0, 'y': mock_mindices1})
+    mock_points['PID'] = list(mock_points.index)
+    mock_cluster_fl = 0
+    mock_points['cluster_fl'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    mock_variables = ['x', 'y']
+    clu_stress = CluStress(mock_points)
+
+    def test_commence_clustering_b(self):
+        [points, points_outlier, _] = self.clu_stress.select_outliers(self.mock_points)
+        points = self.clu_stress.commence_clustering(self.mock_points, self.mock_variables)
+        print(points)
+        import matplotlib.pyplot as plt
+        plt.scatter(points['x'], points['y'], c=points.cluster_fl)
+        plt.show()
+
 class TestBlobs(TestCase):
     from sklearn.datasets import make_blobs, make_moons
     var, clust = make_blobs(n_samples=100, centers=3, n_features=2)
