@@ -123,5 +123,76 @@ class TestCluStressFullClustering(TestCase):
     def test_commence_clustering(self):
         points = self.clu_stress.commence_clustering(self.mock_points, self.mock_variables)
         print(points)
+        # import matplotlib.pyplot as plt
+        # plt.scatter(points['x'], points['y'], c=points.cluster_fl)
+        # plt.show()
 
 
+class TestCluStressFullClustering_b(TestCase):
+    mock_mindices0 = [0, 1, 2, 3, 5, 8, 8, 8, 8, 14]
+    mock_mindices1 = [3, 1, 3, 0, 3, 3, 2, 4, 6, 8]
+    mock_points = pd.DataFrame({'x': mock_mindices0, 'y': mock_mindices1})
+    mock_points['PID'] = list(mock_points.index)
+    mock_cluster_fl = 0
+    mock_points['cluster_fl'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    mock_variables = ['x', 'y']
+    clu_stress = CluStress(mock_points)
+
+    def test_commence_clustering_b(self):
+        [points, points_outlier, _] = self.clu_stress.select_outliers(self.mock_points)
+        points = self.clu_stress.commence_clustering(self.mock_points, self.mock_variables)
+        print(points)
+        import matplotlib.pyplot as plt
+        plt.scatter(points['x'], points['y'], c=points.cluster_fl)
+        plt.show()
+
+class TestBlobs(TestCase):
+    from sklearn.datasets import make_blobs, make_moons
+    var, clust = make_blobs(n_samples=100, centers=3, n_features=2)
+    #var, clust = make_moons(n_samples=100, noise=0.1)
+    mock_variables = ['x', 'y']
+
+    def test_blobs(self):
+        import numpy as np
+        points = pd.DataFrame({'x': list(self.var[:, 0]), 'y': list(self.var[:, 1]), 'cluster_fl': np.zeros((1,100)).tolist()[0], 'cluster_ref': list(self.clust)})
+        from sklearn.preprocessing import MinMaxScaler
+        scaler = MinMaxScaler()
+        for column in self.mock_variables:
+            points[column] = scaler.fit_transform(points[column].values.reshape(-1, 1))
+        points['PID'] = points.index
+        print(points.head())
+        clu_stress = CluStress(points[['x','y', 'cluster_fl', 'PID']])
+        [points, points_outlier, _] = clu_stress.select_outliers(points)
+        points = clu_stress.commence_clustering(points[['x', 'y', 'cluster_fl', 'PID']], self.mock_variables)
+        print(points)
+        import matplotlib.pyplot as plt
+        points = pd.concat([points_outlier, points], axis=0)
+        n_clusters_h = len(points.cluster_fl.unique())
+        fig, ax = plt.subplots()
+        scatter = ax.scatter(points['x'], points['y'], c=points.cluster_fl)
+        legend = ax.legend(*scatter.legend_elements(num=n_clusters_h), loc='lower right', title='Blob clusters',
+                           prop={'size': 4})
+        ax.add_artist(legend)
+        plt.show()
+
+
+class TestOutliers(TestCase):
+    mock_mindices0 = [0, 0, 0, 1, 1, 7, 7, 7, 5, 5, 5, 9, 30, 15]
+    mock_mindices1 = [2, 5, 1, 4, 3, 9, 8, 7, 6, 5, 4, 10, 50, 25]
+    ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11, 12, 13]
+    mock_points = pd.DataFrame({'x': mock_mindices0, 'y': mock_mindices1})
+    from sklearn.preprocessing import MinMaxScaler
+    scaler = MinMaxScaler()
+    for column in mock_points.columns:
+        mock_points[column] = scaler.fit_transform(mock_points[column].values.reshape(-1, 1))
+    mock_points['PID'] = list(mock_points.index)
+    mock_points['cluster_fl'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    mock_variables = ['x', 'y']
+    clu_stress = CluStress(mock_points)
+
+    def test_outliers(self):
+        [points, points_outlier, _] = self.clu_stress.select_outliers(self.mock_points)
+        points = pd.concat([points_outlier, points], axis=0)
+        import matplotlib.pyplot as plt
+        plt.scatter(points['x'], points['y'], c=points.cluster_fl)
+        plt.show()
