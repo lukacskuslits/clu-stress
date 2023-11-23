@@ -122,7 +122,7 @@ class CluStress:
 		connected_point_pairs = []
 		increment = 0
 		L = len(nearest_point_pairs)
-		while True:
+		while L!=0:
 			point_pair = nearest_point_pairs[increment]
 			[connected_point_set, remaining_point_pairs] = self.connect_nearest_points_to_pair(point_pair, remaining_point_pairs)
 			nearest_point_pairs = [connected_point_set] + remaining_point_pairs
@@ -233,10 +233,11 @@ class CluStress:
 		while (len(zeros_now) < len(zeros_before)) and (0 in set_of_flags):
 			self.dist.to_csv('dist_py_1.csv')
 			zeros_before = list(points.loc[points.cluster_fl==0].cluster_fl)
-			print('zeros before:')
-			print(zeros_before)
 			[points, cluster_fl] = self.clusterize_nearest(points, cluster_fl)
 			self.dist.to_csv('dist_py_2.csv')
+			zeros_tmp = len(list(points.loc[points.cluster_fl == 0].cluster_fl))
+			print('zeros tmp:')
+			print(zeros_tmp)
 			points = self.link_points_which_have_their_nearest_neighbours_in_a_cluster(points, variables)
 			self.dist.to_csv('dist_py_3.csv')
 			zeros_now = list(points.loc[points.cluster_fl==0].cluster_fl)

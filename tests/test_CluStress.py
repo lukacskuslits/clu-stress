@@ -140,28 +140,37 @@ class TestCluStressFullClustering_b(TestCase):
 
     def test_commence_clustering_b(self):
         [points, points_outlier, _] = self.clu_stress.select_outliers(self.mock_points)
-        points = self.clu_stress.commence_clustering(self.mock_points, self.mock_variables)
+        points = self.clu_stress.commence_clustering(points, self.mock_variables)
         print(points)
         import matplotlib.pyplot as plt
-        plt.scatter(points['x'], points['y'], c=points.cluster_fl)
+        fig, ax = plt.subplots()
+        scatter = ax.scatter(points['x'], points['y'], c=points.cluster_fl)
+        legend = ax.legend(*scatter.legend_elements(num=2), loc='lower right', title='Simple test clusters',
+                           prop={'size': 4})
+        ax.add_artist(legend)
         plt.show()
 
 class TestBlobs(TestCase):
-    from sklearn.datasets import make_blobs, make_moons
-    var, clust = make_blobs(n_samples=100, centers=3, n_features=2)
-    #var, clust = make_moons(n_samples=100, noise=0.1)
+    import numpy as np
+    from sklearn.datasets import make_blobs, make_moons, make_circles
+    n_samples = 20
+    var, clust = make_blobs(n_samples=n_samples, centers=2, n_features=2, cluster_std=1.5)
+    #var, clust = make_circles(n_samples=n_samples, factor=0.5, noise=0.05)
+    #var, clust = make_moons(n_samples=n_samples, noise=0.15)
+    # rng = np.random.RandomState(10)
+    # var, clust = rng.rand(n_samples, 2), np.squeeze(np.zeros((1, n_samples)))
     mock_variables = ['x', 'y']
 
     def test_blobs(self):
         import numpy as np
-        points = pd.DataFrame({'x': list(self.var[:, 0]), 'y': list(self.var[:, 1]), 'cluster_fl': np.zeros((1,100)).tolist()[0], 'cluster_ref': list(self.clust)})
+        points = pd.DataFrame({'x': list(self.var[:, 0]), 'y': list(self.var[:, 1]), 'cluster_fl': np.zeros((1,self.n_samples)).tolist()[0], 'cluster_ref': list(self.clust)})
         from sklearn.preprocessing import MinMaxScaler
         scaler = MinMaxScaler()
         for column in self.mock_variables:
             points[column] = scaler.fit_transform(points[column].values.reshape(-1, 1))
         points['PID'] = points.index
         print(points.head())
-        clu_stress = CluStress(points[['x','y', 'cluster_fl', 'PID']])
+        clu_stress = CluStress(points[['x', 'y', 'cluster_fl', 'PID']])
         [points, points_outlier, _] = clu_stress.select_outliers(points)
         points = clu_stress.commence_clustering(points[['x', 'y', 'cluster_fl', 'PID']], self.mock_variables)
         print(points)
@@ -196,3 +205,65 @@ class TestOutliers(TestCase):
         import matplotlib.pyplot as plt
         plt.scatter(points['x'], points['y'], c=points.cluster_fl)
         plt.show()
+
+
+class TestMandelBrot(TestCase):
+
+    def density_space(self, xs, ps, n, endpoint=False, order=1, random=False):
+        import numpy as np
+        from scipy.interpolate import interp1d
+        from scipy.integrate import cumtrapz
+
+        cps = cumtrapz(ps, xs, initial=0)
+        cps *= (1 / cps[-1])
+        intfunc = interp1d(cps, xs, kind=order)
+        return intfunc(np.random.uniform(size=n))
+    @staticmethod
+    def complex_matrix(xmin, xmax, ymin, ymax, pixel_density):
+        import numpy as np
+        rng = np.random.default_rng()
+        random_mask = rng.integers(low=0, high=52, size=40)
+        re = np.linspace(xmin, xmax, int((xmax - xmin) * pixel_density))[random_mask]
+        im = np.linspace(ymin, ymax, int((ymax - ymin) * pixel_density))[random_mask]
+        return re[np.newaxis, :] + im[:, np.newaxis] * 1j
+    @staticmethod
+    def is_stable(c, num_iterations):
+        z = 0
+        for _ in range(num_iterations):
+            z = z ** 2 + c
+        return abs(z) <= 2
+
+    def get_members(self, c, num_iterations):
+        mask = self.is_stable(c, num_iterations)
+        return c[mask]
+
+    mock_variables = ['x', 'y']
+
+
+    def test_mandelbrot(self):
+        import numpy as np
+        c = self.complex_matrix(-2, 0.5, -1.5, 1.5, pixel_density=21)
+        vars = self.get_members(c, num_iterations=20)
+        n_samples = len(vars)
+        clust = np.squeeze(np.zeros((1, n_samples)))
+        points = pd.DataFrame({'x': vars.real, 'y': vars.imag, 'cluster_fl': np.zeros((1,n_samples)).tolist()[0], 'cluster_ref': list(clust)})
+        from sklearn.preprocessing import MinMaxScaler
+        scaler = MinMaxScaler()
+        for column in self.mock_variables:
+            points[column] = scaler.fit_transform(points[column].values.reshape(-1, 1))
+        points['PID'] = points.index
+        print(points.head())
+        clu_stress = CluStress(points[['x', 'y', 'cluster_fl', 'PID']])
+        [points, points_outlier, _] = clu_stress.select_outliers(points)
+        points = clu_stress.commence_clustering(points[['x', 'y', 'cluster_fl', 'PID']], self.mock_variables)
+        print(points)
+        import matplotlib.pyplot as plt
+        points = pd.concat([points_outlier, points], axis=0)
+        n_clusters_h = len(points.cluster_fl.unique())
+        fig, ax = plt.subplots()
+        scatter = ax.scatter(points['x'], points['y'], c=points.cluster_fl)
+        legend = ax.legend(*scatter.legend_elements(num=n_clusters_h), loc='lower right', title='Blob clusters',
+                           prop={'size': 4})
+        ax.add_artist(legend)
+        plt.show()
+
